@@ -17,26 +17,42 @@
     -webkit-text-size-adjust: none;
   }
   canvas {
-    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
     width: 100vw;
     height: 100vh;
     background: #000;
   }
-  .controls {
+  /* Left controls for movement */
+  .controls.left-controls {
     position: absolute;
     bottom: 10px;
     left: 10px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .controls.left-controls .side-buttons {
     display: flex;
     gap: 10px;
+  }
+  /* Right control for shooting */
+  .controls.right-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
     z-index: 10;
   }
   .button {
     width: 60px;
     height: 60px;
-    background: rgba(255,255,255,0.2);
-    border: 2px solid white;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid lime;
     border-radius: 10px;
-    color: white;
+    color: lime;
     font-size: 24px;
     text-align: center;
     line-height: 60px;
@@ -56,6 +72,18 @@
     text-align: center;
     white-space: pre;
   }
+  /* Projectile styling and animation */
+  .projectile {
+    position: absolute;
+    font-size: 24px;
+    color: yellow;
+    pointer-events: none;
+    animation: projectileMove 500ms linear forwards;
+  }
+  @keyframes projectileMove {
+    from { transform: translate(0,0); opacity: 1; }
+    to { transform: translate(-150px, -150px); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -66,18 +94,28 @@
 </pre>
 </div>
 <audio id="gunshot" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAIA+AAABAAgAZGF0YRAAAAAA/////w==" preload="auto"></audio>
-<div class="controls">
-  <div class="button" id="left">L</div>
-  <div class="button" id="right">R</div>
+
+<!-- Left movement controls -->
+<div class="controls left-controls">
   <div class="button" id="forward">F</div>
+  <div class="side-buttons">
+    <div class="button" id="left">L</div>
+    <div class="button" id="right">R</div>
+  </div>
+</div>
+
+<!-- Right shooting control -->
+<div class="controls right-controls">
   <div class="button" id="shoot">S</div>
 </div>
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// The simple map: 1 = wall, 0 = empty, 2 = enemy
 const map = [
   [1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,1],
@@ -86,8 +124,8 @@ const map = [
   [1,0,0,0,0,0,0,1],
   [1,1,1,1,1,1,1,1],
 ];
-
 const tileSize = 64;
+
 let px = 100, py = 100, pa = 0;
 const fov = Math.PI / 4;
 const numRays = 120;
@@ -98,19 +136,18 @@ function castRays() {
     let rayAngle = pa - fov/2 + fov * i/numRays;
     let sin = Math.sin(rayAngle);
     let cos = Math.cos(rayAngle);
-
     for (let d = 0; d < maxDepth; d++) {
       let rx = px + cos * d;
       let ry = py + sin * d;
       let mx = Math.floor(rx / tileSize);
       let my = Math.floor(ry / tileSize);
-
       if (map[my] && map[my][mx] !== 0) {
         let shade = 255 - (d * 255 / maxDepth);
-        if (map[my][mx] === 2) ctx.fillStyle = `rgb(${shade},0,0)`; // Enemy
-        else ctx.fillStyle = `rgb(${shade},${shade},${shade})`; // Wall
+        if (map[my][mx] === 2) ctx.fillStyle = `rgb(${shade},0,0)`; // enemy
+        else ctx.fillStyle = `rgb(${shade},${shade},${shade})`; // wall
         let lineHeight = canvas.height / (d / 10 + 1);
-        ctx.fillRect(i * (canvas.width / numRays), (canvas.height - lineHeight)/2, canvas.width / numRays + 1, lineHeight);
+        ctx.fillRect(i * (canvas.width / numRays), (canvas.height - lineHeight)/2,
+                     canvas.width / numRays + 1, lineHeight);
         break;
       }
     }
@@ -123,9 +160,9 @@ function render() {
   castRays();
   requestAnimationFrame(render);
 }
-
 render();
 
+// Movement controls
 let movingForward = false;
 let turningLeft = false;
 let turningRight = false;
@@ -145,26 +182,38 @@ document.getElementById("left").addEventListener("touchstart", () => turningLeft
 document.getElementById("left").addEventListener("touchend", () => turningLeft = false);
 document.getElementById("right").addEventListener("touchstart", () => turningRight = true);
 document.getElementById("right").addEventListener("touchend", () => turningRight = false);
-document.getElementById("shoot").addEventListener("touchstart", () => {
-  document.getElementById("gunshot").play();
 
-  let rx = px + Math.cos(pa) * tileSize;
-  let ry = py + Math.sin(pa) * tileSize;
-  let mx = Math.floor(rx / tileSize);
-  let my = Math.floor(ry / tileSize);
-  if (map[my] && map[my][mx] === 2) {
-    map[my][mx] = 0; // Enemy "dies"
-  }
+// Shooting control: fire projectile and simulate enemy hit after a brief delay
+document.getElementById("shoot").addEventListener("touchstart", () => {
+  // Play gunshot sound
+  document.getElementById("gunshot").play();
+  
+  // Create a moving projectile (a yellow bullet) from the shoot button's position
+  const shootBtn = document.getElementById("shoot");
+  const rect = shootBtn.getBoundingClientRect();
+  let proj = document.createElement("div");
+  proj.className = "projectile";
+  proj.textContent = "•";
+  // Calculate starting position based on shoot button's center
+  let startLeft = rect.left + rect.width/2;
+  let startBottom = window.innerHeight - rect.bottom + rect.height/2;
+  proj.style.left = startLeft + "px";
+  proj.style.bottom = startBottom + "px";
+  document.body.appendChild(proj);
+  // Remove the projectile when its animation ends
+  proj.addEventListener("animationend", () => proj.remove());
+  
+  // Simulate collision: after a brief delay, check the tile in front of the player
+  setTimeout(() => {
+    let rx = px + Math.cos(pa) * tileSize;
+    let ry = py + Math.sin(pa) * tileSize;
+    let mx = Math.floor(rx / tileSize);
+    let my = Math.floor(ry / tileSize);
+    if (map[my] && map[my][mx] === 2) {
+      map[my][mx] = 0; // "destroy" enemy
+    }
+  }, 300);
 });
 </script>
 </body>
-</html>
-"""
-
-# Save file for user
-with open("/mnt/data/mini_doom_ascii_gun.html", "w") as f:
-    f.write(ascii_gun_version)
-
-"/mnt/data/mini_doom_ascii_gun.html"
-
 </html>
