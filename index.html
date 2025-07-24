@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Mini Doom Clone</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
 <style>
   html, body {
     margin: 0;
@@ -12,6 +11,10 @@
     overflow: hidden;
     background: black;
     touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-text-size-adjust: none;
   }
   canvas {
     display: block;
@@ -34,31 +37,40 @@
     border: 2px solid white;
     border-radius: 10px;
     color: white;
-    font-size: 18px;
+    font-size: 24px;
     text-align: center;
     line-height: 60px;
     user-select: none;
+    font-family: monospace;
   }
   #gun {
     position: absolute;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    height: 40%;
+    color: white;
+    font-family: monospace;
+    font-size: 20px;
     z-index: 5;
     pointer-events: none;
+    text-align: center;
+    white-space: pre;
   }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<img id="gun" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABpklEQVRYR+2XsU7DMBBFr8pVoGOgA7AFHgDOgA6gA1AD0AzoAO4AOoAMdBYpObel8TDW7s87/7+7KCGD2R0QQAhWATCJwAZRBkwEAzRWW5MXAjgyfLgAIshB9AOzJZ55PO+MfXUq8rr8as+ab0ghgfP1ArC4HDwIoH1HABfDM+R9NSByLaxppQ6SfwJm3X2RjzNylR2g+vN5sAuRLOs9qtdQ8A9kIC/51J3Wy8w8A7E5N7NpUlS4sAp1PSHRaU4L/fD4CboT6toZzDCPDWVlhJB1nGssRz0MTKBeqre8EazgUvDLfRZm4YVNVtvtyG9gALysBB7cJxjShfMiV3+Bn3Yv+3B/4HTb1cArJZr4FhZ7tb5gZvnUL8BrL3I6YktB2OQfRHyAFz0ynFOmf6C8FRIARkz9AJ03IHP4LkRXbiCi0uc5IZ4O6PeYjKcmcpQZh7ZJ3mjUucovWX8Af2ym7uPI7L5wAAAABJRU5ErkJggg==" />
+<div id="gun">
+<pre>
+   [=======>
+</pre>
+</div>
 <audio id="gunshot" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAIA+AAABAAgAZGF0YRAAAAAA/////w==" preload="auto"></audio>
 <div class="controls">
-  <div class="button" id="left">◀</div>
-  <div class="button" id="right">▶</div>
-  <div class="button" id="forward">▲</div>
-  <div class="button" id="shoot">●</div>
+  <div class="button" id="left">L</div>
+  <div class="button" id="right">R</div>
+  <div class="button" id="forward">F</div>
+  <div class="button" id="shoot">S</div>
 </div>
 <script>
 const canvas = document.getElementById("game");
@@ -146,4 +158,13 @@ document.getElementById("shoot").addEventListener("touchstart", () => {
 });
 </script>
 </body>
+</html>
+"""
+
+# Save file for user
+with open("/mnt/data/mini_doom_ascii_gun.html", "w") as f:
+    f.write(ascii_gun_version)
+
+"/mnt/data/mini_doom_ascii_gun.html"
+
 </html>
